@@ -1,3 +1,52 @@
+## open_tracing支持
+
+## xorm分析
+- `session_tx.go`里搜索`DB().`以及`.tx.`可找到事务sql相关的地方
+- `session_raw.go`里`queryRows` `exec`即为记录执行sql的地方，且注意里面`.tx.`去执行的要标记区分是事务内。`isAutoCommit`基本上可以理解为是否不在事务中。
+- 最后搜索`saveLastSQL(`以及`.lastSQL =`可检查几乎所有开始执行sql的地方
+
+- 增删改会触发`afterClosures`，根据`bean`即可打印结果。
+- `session_raw.go`里的`Exec`并不会走`afterClosure`，所以需要特别处理一下。
+- `session_query.go`里的`Query``QueryString`等等很多方法并不会走`afterClosure`，所以需要特别处理一下。
+
+- core.Row 可重载`Scan`方法，在其scan执行最后去记录下当前rows的scan结果。
+- migrate.go 里的`isFirstRun`是直接使用的原生`rows.scan`的，需要修改成`core.Rows`的。
+
+- 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。
+
+## 综上所述，找到处理点最少的方式来记录`span`
+
+### `span`开始
+- 在任何设置`lastSql`的地方开始一个`span`，且记录其执行的sql。
+- 如果发现要执行的是`BEGIN TRANSACTION`，则`span`名为`SQL TRANSACTION`。
+- 如果发现当前处于事务中，则新开一个子级别`span`
+
+### 结果集的记录，分为`exec`和`scan`两类
+- `exec`的直接在执行完毕那里去记录下`Result`的`LastInsertId`和`RowsAffected`即可。
+- `scan`的利用重载的方式记录每个结果(可能N个)，最后在结束`span`的时候整合所有结果成数组并记录。
+
+### `span`结束
+- 为了事务内`span`也能正常关闭，搜索所有的 `if session.isAutoClose { xxx `换成必须执行的方法，然后里面执行`span`的关闭，最后再去判断是否去执行`close`操作。
+- 在`session.Close`方法里去结束`span`，发现当前`span`已经结束则忽略。
+
+### 额外
+- migrate.go 里的`isFirstRun`是直接使用的原生`rows.scan`的，需要修改成`core.Rows`的。
+
+## 其他乱七八糟的
+
+### xorm的context缓存机制
+- session_get.go 里搜索 context.Get( 即可找到从缓存获取逻辑，这块最好也处理一下
+
+### 搜索 DB(). 即可找到一些其他的没处理的地方
+- 例如`dialect`之类的倒是没什么必要记录
+- 例如`engine.go`里的`dumpTables` `import`之类的也没必要记录
+
+### xorm的bug
+- 例如`FindAndCount`里的`Close`执行了两次
+- 例如`sum`私有方法，却执行了`Close`，这个不太合理
+- 例如`Ping` `PingContext` `Query``Exec`等方法不走`beforeClosures`，`afterClosures`
+- 例如`Ping` `PingContext` 方法没记录`lastSql`
+
 # xorm
 
 [中文](https://github.com/go-xorm/xorm/blob/master/README_CN.md)
