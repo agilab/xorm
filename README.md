@@ -12,7 +12,7 @@
 
 - `core.Row` 可重载`Scan`方法，在其scan执行最后去记录下当前rows的scan结果。
 
-- 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。
+- 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。这个是通过`isAutoClose`来实现的。
 
 ## 综上所述，找到处理点最少的方式来记录`span`
 
