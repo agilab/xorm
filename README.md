@@ -14,24 +14,26 @@
 
 - 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。
 
-## 综上所述，找到处理点最少的方式来记录`span`
+## 综上所述，找到处理点最少的方式来记录`span`，我们也只关心以session去执行sql的那些逻辑
+
+### 将所有需要记录的信息整理到一个结构体，记录到session里。
 
 ### `span`开始
-// - 在任何设置`lastSql`的地方开始一个`span`，且记录其执行的sql。
-- 在`core.db core.stmt core.tx`里的`query`和`exec`方法里开始一个`span`，且记录其执行的sql，如果需要拼接成可读的参考`mysql-driver`里的`interpolateParams`。
+- 在任何设置`lastSql`的地方，记录其执行的sql。如果需要拼接成可读的参考`mysql-driver`里的`interpolateParams`
 - 如果发现要执行的是`BEGIN TRANSACTION`，则`span`名为`SQL TRANSACTION`。
 - 如果发现当前处于事务中，则新开一个子级别`span`。
 
 ### 结果集的记录，分为`exec`和`scan`两类
 - `exec`的直接在执行完毕那里去记录下`Result`的`LastInsertId`和`RowsAffected`即可。
-- `scan`的利用重载的方式记录每个结果(可能N个)，最后在结束`span`的时候整合所有结果成数组并记录。
+- `scan`的利用重载的方式记录每个结果(可能N个)，最后整合所有结果成数组并记录。
+- `scan`的重载不太好搞，因为响应到的类是`core.Rows`，其非xorm package里的，必须去改动`core`了。
+- `core.Row` 同上。
 
 ### `span`结束
 - 为了事务内`span`也能正常关闭，搜索所有的 `if session.isAutoClose { xxx `换成必须执行的方法，然后里面执行`span`的关闭，最后再去判断是否去执行`close`操作。
-- 在`session.Close`方法里去结束`span`，发现当前`span`已经结束则忽略。
+- vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer autoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
+- 在`autoCloseOrNot`以及`session.Close`方法里去根据上述记录信息确定最终`span`，发现当前session已经记录span则什么都不做。
 
-### if session 修改方法
-vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer session.autoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
 
 ## 其他乱七八糟的
 
@@ -40,11 +42,9 @@ vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if
 
 ### xorm的bug
 - 例如`FindAndCount`里的`Close`执行了两次
-- 例如`Iterate`里的`Close`执行了两次
 - 例如`sum`私有方法，却执行了`Close`，这个不太合理
 - 例如`Ping` `PingContext` `Query``Exec`等方法不走`beforeClosures`，`afterClosures`
 - 例如`Ping` `PingContext` 方法没记录`lastSql`
-
 # xorm
 
 [中文](https://github.com/go-xorm/xorm/blob/master/README_CN.md)
