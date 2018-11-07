@@ -19,11 +19,11 @@ func (session *Session) Rows(bean interface{}) (*Rows, error) {
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
 func (session *Session) Iterate(bean interface{}, fun IterFunc) error {
-	defer session.autoCloseOrNot()
-
 	if session.statement.bufferSize > 0 {
 		return session.bufferIterate(bean, fun)
 	}
+
+	defer session.autoCloseOrNot()
 
 	rows, err := session.Rows(bean)
 	if err != nil {

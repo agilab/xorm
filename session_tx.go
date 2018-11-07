@@ -4,6 +4,10 @@
 
 package xorm
 
+import (
+	"time"
+)
+
 // Begin a transaction
 func (session *Session) Begin() error {
 	if session.isAutoCommit {
@@ -15,6 +19,17 @@ func (session *Session) Begin() error {
 		session.isCommitedOrRollbacked = false
 		session.tx = tx
 		session.saveLastSQL("BEGIN TRANSACTION")
+
+		{
+			ti := &tracingInfo{}
+			ti.startTime = time.Now()
+			ti.operation = SessionOpTransaction
+			ti.lastSQL = session.lastSQL
+			ti.lastSQLArgs = session.lastSQLArgs
+			ti.dbType = string(session.engine.dialect.DBType())
+			ti.isTx = true
+			session.prepareTracingSpan(ti)
+		}
 	}
 	return nil
 }
@@ -23,6 +38,10 @@ func (session *Session) Begin() error {
 func (session *Session) Rollback() error {
 	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
 		session.saveLastSQL(session.engine.dialect.RollBackStr())
+		defer func() {
+			session.tracingInfo.logEvent("ROLLBACK")
+		}()
+
 		session.isCommitedOrRollbacked = true
 		session.isAutoCommit = true
 		return session.tx.Rollback()
@@ -34,6 +53,13 @@ func (session *Session) Rollback() error {
 func (session *Session) Commit() error {
 	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
 		session.saveLastSQL("COMMIT")
+		defer func() {
+			if session.tracingInfo != nil {
+				session.tracingInfo.txCommit = true
+				session.tracingInfo.logEvent("COMMIT")
+			}
+		}()
+
 		session.isCommitedOrRollbacked = true
 		session.isAutoCommit = true
 		var err error

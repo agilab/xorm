@@ -6,16 +6,60 @@ package xorm
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/crc32"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
+	stdlog "log"
+
+	ers "github.com/pkg/errors"
+
+	"context"
+
+	"github.com/agilab/gostone/agitracing"
 	"github.com/go-xorm/core"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	"github.com/opentracing/opentracing-go/log"
 )
+
+const (
+	SessionOpTransaction = "Transaction"
+	SessionOpExec        = "Exec"
+	SessionOpQuery       = "Query"
+)
+
+type tracingInfo struct {
+	startTime   time.Time // startTime
+	operation   string    // SessionOp
+	lastSQL     string
+	lastSQLArgs []interface{}
+	dbType      string
+	tableName   string // main table name
+
+	sp opentracing.Span
+
+	isTx     bool // 当前追踪是否是事务
+	txCommit bool // 事务是否被提交，最终依此确定span的opname
+
+	parentInfo *tracingInfo // 父级，一般是事务
+}
+
+func (ti *tracingInfo) logEvent(l string) {
+	if ti == nil {
+		return
+	}
+	if ti.sp != nil {
+		ti.sp.LogEvent(l)
+	}
+}
 
 // Session keep a pointer to sql.DB and provides all execution of all
 // kind of database operations.
@@ -52,6 +96,8 @@ type Session struct {
 	lastSQLArgs []interface{}
 
 	err error
+
+	tracingInfo *tracingInfo
 }
 
 // Clone copy all the session's content and return a new session
@@ -84,14 +130,228 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
+var numericPlaceHolderRegexp = regexp.MustCompile(`\$\d+`)
+var sqlRegexp = regexp.MustCompile(`\?`)
+
+//TODO: 已知BUG -> 如果某值是枚举，转出来的会是枚举名称
+func getSQL(values ...interface{}) string {
+	var (
+		sql             string
+		formattedValues []string
+	)
+	for _, value := range values[1].([]interface{}) {
+		indirectValue := reflect.Indirect(reflect.ValueOf(value))
+		if indirectValue.IsValid() {
+			value = indirectValue.Interface()
+			if t, ok := value.(time.Time); ok {
+				formattedValues = append(formattedValues, fmt.Sprintf("'%v'", t.Format("2006-01-02 15:04:05")))
+			} else if b, ok := value.([]byte); ok {
+				if str := string(b); isPrintable(str) {
+					formattedValues = append(formattedValues, fmt.Sprintf("'%v'", str))
+				} else {
+					formattedValues = append(formattedValues, "'<binary>'")
+				}
+			} else if r, ok := value.(driver.Valuer); ok {
+				if value, err := r.Value(); err == nil && value != nil {
+					// agiorm.PGJSON.Value() 返回的是[]byte
+					if value, ok := value.([]byte); ok {
+						formattedValues = append(formattedValues, fmt.Sprintf("'%s'", value))
+					} else {
+						formattedValues = append(formattedValues, fmt.Sprintf("'%v'", value))
+					}
+				} else {
+					formattedValues = append(formattedValues, "NULL")
+				}
+			} else {
+				formattedValues = append(formattedValues, fmt.Sprintf("'%v'", value))
+			}
+		} else {
+			formattedValues = append(formattedValues, "NULL")
+		}
+	}
+
+	// differentiate between $n placeholders or else treat like ?
+	if numericPlaceHolderRegexp.MatchString(values[0].(string)) {
+		sql = values[0].(string)
+		for index, value := range formattedValues {
+			placeholder := fmt.Sprintf(`\$%d([^\d]|$)`, index+1)
+			sql = regexp.MustCompile(placeholder).ReplaceAllString(sql, value+"$1")
+		}
+	} else {
+		formattedValuesLength := len(formattedValues)
+		for index, value := range sqlRegexp.Split(values[0].(string), -1) {
+			sql += value
+			if index < formattedValuesLength {
+				sql += formattedValues[index]
+			}
+		}
+	}
+	return sql
+}
+
+func isPrintable(s string) bool {
+	for _, r := range s {
+		if !unicode.IsPrint(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func (session *Session) prepareTracingSpan(ti *tracingInfo) {
+	if ti == nil {
+		stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("no tracingInfo, cant prepareTracing.")))
+		return
+	}
+
+	// 原追踪信息丢为父级
+	ti.parentInfo = session.tracingInfo
+	session.tracingInfo = ti
+
+	// 初始化span
+	ctx := context.Background()
+	if ti.parentInfo != nil && ti.parentInfo.sp != nil {
+		// 有事务父级使用事务父级
+		ctx = opentracing.ContextWithSpan(ctx, ti.parentInfo.sp)
+	} else {
+		// 尝试找寻其他父级
+		glsSpan := agitracing.GetGlsTracingSpan()
+		if glsSpan != nil {
+			ctx = opentracing.ContextWithSpan(ctx, glsSpan)
+		}
+	}
+
+	//根据parentCtx，构造子span
+	var parentCtx opentracing.SpanContext
+	if parent := opentracing.SpanFromContext(ctx); parent != nil {
+		parentCtx = parent.Context()
+	}
+
+	var op string
+	if ti.isTx {
+		op = "BEGIN TRANSACTION"
+	} else {
+		sql := strings.ToUpper(strings.TrimSpace(ti.lastSQL))
+		if strings.Index(sql, "SELECT COUNT(") == 0 {
+			op = "SELECT COUNT"
+		} else {
+			//这时候可以直接取sql头部作为method
+			op = strings.Split(sql, " ")[0]
+			if op == "" {
+				op = ti.operation
+			}
+		}
+	}
+
+	opName := fmt.Sprintf("SQL %s", op)
+	if ti.tableName != "" {
+		opName += " " + ti.tableName
+	}
+	sp := opentracing.GlobalTracer().StartSpan(
+		opName,
+		opentracing.ChildOf(parentCtx),
+		opentracing.StartTime(ti.startTime),
+	)
+	ti.sp = sp
+
+	//tag
+	ext.Component.Set(sp, "sql")
+	ext.DBType.Set(sp, ti.dbType)
+	sp.SetTag("db.method", op)
+	sp.SetTag("db.table", ti.tableName)
+
+	//uid
+	uid := sp.BaggageItem(agitracing.BaggageItemKeyUserID)
+	if uid != "" {
+		sp.SetTag(agitracing.TagKeyUserID, uid)
+	}
+
+	//记录请求
+	values := []interface{}{ti.lastSQL, ti.lastSQLArgs}
+	query := getSQL(values...) //构造实际执行的sql语句
+	sp.LogFields(log.String("request.body", query))
+}
+
+func (session *Session) finishTracingSpan() {
+	ti := session.tracingInfo
+	if ti == nil {
+		// stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("no tracingInfo, cant finishTracingSpan.")))
+		return
+	}
+
+	// 还原操作
+	defer func() {
+		session.tracingInfo = ti.parentInfo
+	}()
+
+	if ti.sp != nil {
+		defer ti.sp.Finish()
+
+		if ti.isTx {
+			if ti.txCommit {
+				ti.sp.SetOperationName("SQL COMMIT TRANSACTION")
+			} else {
+				ti.sp.SetOperationName("SQL ROLLBACK TRANSACTION")
+			}
+		}
+	}
+
+	// TODO: 错误和options以及结果暂时后续处理
+
+	// //记录请求执行错误
+	// if scope.HasError() {
+	// 	err := scope.DB().Error
+
+	// 	//这个错误比较特殊，不是绝对意义上的错误，正常运行过程中比较常见，这里特殊处理
+	// 	if err == gorm.ErrRecordNotFound {
+	// 		sp.LogFields(log.String("event", err.Error()))
+	// 	} else {
+	// 		ext.Error.Set(sp, true)
+	// 		sp.LogFields(ErrorField(errors.Wrap(err, "Query failed")))
+	// 	}
+	// }
+
+	// opts := &tracingOptions{}
+	// val, ok = scope.DB().Get(opentracingTracingOptionsKey)
+	// if ok {
+	// 	opts = val.(*tracingOptions)
+	// }
+
+	// //记录结果
+	// result := &struct {
+	// 	RowsAffected    int64
+	// 	PrimaryKeyValue interface{} `json:",omitempty"`
+	// 	Result          interface{} `json:",omitempty"`
+	// }{
+	// 	RowsAffected:    scope.DB().RowsAffected,
+	// 	PrimaryKeyValue: scope.PrimaryKeyValue(),
+	// }
+
+	// if !opts.disableTracingGORMResultBody {
+
+	// }
+
+	// jsn, err := jsoniter.Marshal(result)
+	// if err != nil {
+	// 	ext.Error.Set(sp, true)
+	// 	sp.LogFields(ErrorField(errors.Wrap(err, "Marshal result failed")))
+	// } else {
+	// 	sp.LogFields(log.String("result", pruneBodyLog(string(jsn), opts.maxBodyLogSize)))
+	// }
+}
+
 func (session *Session) autoCloseOrNot() {
 	if session.isAutoClose {
-		defer session.Close()
+		session.Close()
+	} else {
+		session.finishTracingSpan()
 	}
 }
 
 // Close release the connection from pool
 func (session *Session) Close() {
+	session.finishTracingSpan()
+
 	for _, v := range session.stmtCache {
 		v.Close()
 	}

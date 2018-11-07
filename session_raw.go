@@ -26,6 +26,16 @@ func (session *Session) queryRows(sqlStr string, args ...interface{}) (*core.Row
 	defer session.resetStatement()
 
 	session.queryPreprocess(&sqlStr, args...)
+	{
+		ti := &tracingInfo{}
+		ti.startTime = time.Now()
+		ti.operation = SessionOpQuery
+		ti.lastSQL = session.lastSQL
+		ti.lastSQLArgs = session.lastSQLArgs
+		ti.dbType = string(session.engine.dialect.DBType())
+		ti.tableName = session.statement.TableName()
+		session.prepareTracingSpan(ti)
+	}
 
 	if session.engine.showSQL {
 		if session.engine.showExecTime {
@@ -153,6 +163,17 @@ func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, er
 	defer session.resetStatement()
 
 	session.queryPreprocess(&sqlStr, args...)
+
+	{
+		ti := &tracingInfo{}
+		ti.startTime = time.Now()
+		ti.operation = SessionOpExec
+		ti.lastSQL = session.lastSQL
+		ti.lastSQLArgs = session.lastSQLArgs
+		ti.dbType = string(session.engine.dialect.DBType())
+		ti.tableName = session.statement.TableName()
+		session.prepareTracingSpan(ti)
+	}
 
 	if session.engine.showSQL {
 		if session.engine.showExecTime {
