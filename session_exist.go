@@ -15,7 +15,7 @@ import (
 
 // Exist returns true if the record exist otherwise return false
 func (session *Session) Exist(bean ...interface{}) (bool, error) {
-	defer session.AutoCloseOrNot()
+	defer session.autoCloseOrNot()
 
 	var sqlStr string
 	var args []interface{}

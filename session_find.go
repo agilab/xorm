@@ -23,13 +23,13 @@ const (
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
 func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{}) error {
-	defer session.AutoCloseOrNot()
+	defer session.autoCloseOrNot()
 	return session.find(rowsSlicePtr, condiBean...)
 }
 
 // FindAndCount find the results and also return the counts
 func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
-	defer session.AutoCloseOrNot()
+	defer session.autoCloseOrNot()
 
 	session.autoResetStatement = false
 	err := session.find(rowsSlicePtr, condiBean...)

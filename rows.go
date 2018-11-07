@@ -114,9 +114,7 @@ func (rows *Rows) Scan(bean interface{}) error {
 
 // Close session if session.IsAutoClose is true, and claimed any opened resources
 func (rows *Rows) Close() error {
-	if rows.session.isAutoClose {
-		defer rows.session.Close()
-	}
+	defer rows.session.autoCloseOrNot()
 
 	if rows.lastError == nil {
 		if rows.rows != nil {

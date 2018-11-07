@@ -31,7 +31,7 @@
 - 在`session.Close`方法里去结束`span`，发现当前`span`已经结束则忽略。
 
 ### if session 修改方法
-vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer session.AutoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
+vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer session.autoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
 
 ## 其他乱七八糟的
 

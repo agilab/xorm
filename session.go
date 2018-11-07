@@ -84,7 +84,7 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
-func (session *Session) AutoCloseOrNot() {
+func (session *Session) autoCloseOrNot() {
 	if session.isAutoClose {
 		defer session.Close()
 	}

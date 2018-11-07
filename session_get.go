@@ -17,7 +17,7 @@ import (
 // Get retrieve one record from database, bean's non-empty fields
 // will be as conditions
 func (session *Session) Get(bean interface{}) (bool, error) {
-	defer session.AutoCloseOrNot()
+	defer session.autoCloseOrNot()
 	return session.get(bean)
 }
 
