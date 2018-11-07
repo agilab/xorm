@@ -17,9 +17,7 @@ func (engine *Engine) PingContext(ctx context.Context) error {
 
 // PingContext test if database is ok
 func (session *Session) PingContext(ctx context.Context) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	session.engine.logger.Infof("PING DATABASE %v", session.engine.DriverName())
 	return session.DB().PingContext(ctx)

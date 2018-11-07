@@ -13,9 +13,7 @@ import (
 // Count counts the records. bean's non-empty fields
 // are conditions.
 func (session *Session) Count(bean ...interface{}) (int64, error) {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	var sqlStr string
 	var args []interface{}
@@ -41,9 +39,7 @@ func (session *Session) Count(bean ...interface{}) (int64, error) {
 
 // sum call sum some column. bean's non-empty fields are conditions.
 func (session *Session) sum(res interface{}, bean interface{}, columnNames ...string) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	v := reflect.ValueOf(res)
 	if v.Kind() != reflect.Ptr {

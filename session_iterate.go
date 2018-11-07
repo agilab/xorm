@@ -19,9 +19,7 @@ func (session *Session) Rows(bean interface{}) (*Rows, error) {
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
 func (session *Session) Iterate(bean interface{}, fun IterFunc) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	if session.statement.bufferSize > 0 {
 		return session.bufferIterate(bean, fun)
@@ -56,9 +54,7 @@ func (session *Session) BufferSize(size int) *Session {
 }
 
 func (session *Session) bufferIterate(bean interface{}, fun IterFunc) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	var bufferSize = session.statement.bufferSize
 	var limit = session.statement.LimitN

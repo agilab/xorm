@@ -14,9 +14,7 @@ import (
 
 // Ping test if database is ok
 func (session *Session) Ping() error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	session.engine.logger.Infof("PING DATABASE %v", session.engine.DriverName())
 	return session.DB().Ping()
@@ -24,9 +22,7 @@ func (session *Session) Ping() error {
 
 // CreateTable create a table according a bean
 func (session *Session) CreateTable(bean interface{}) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	return session.createTable(bean)
 }
@@ -43,9 +39,7 @@ func (session *Session) createTable(bean interface{}) error {
 
 // CreateIndexes create indexes
 func (session *Session) CreateIndexes(bean interface{}) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	return session.createIndexes(bean)
 }
@@ -67,9 +61,7 @@ func (session *Session) createIndexes(bean interface{}) error {
 
 // CreateUniques create uniques
 func (session *Session) CreateUniques(bean interface{}) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 	return session.createUniques(bean)
 }
 
@@ -90,9 +82,7 @@ func (session *Session) createUniques(bean interface{}) error {
 
 // DropIndexes drop indexes
 func (session *Session) DropIndexes(bean interface{}) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	return session.dropIndexes(bean)
 }
@@ -114,9 +104,7 @@ func (session *Session) dropIndexes(bean interface{}) error {
 
 // DropTable drop table will drop table if exist, if drop failed, it will return error
 func (session *Session) DropTable(beanOrTableName interface{}) error {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	return session.dropTable(beanOrTableName)
 }
@@ -143,9 +131,7 @@ func (session *Session) dropTable(beanOrTableName interface{}) error {
 
 // IsTableExist if a table is exist
 func (session *Session) IsTableExist(beanOrTableName interface{}) (bool, error) {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	tableName := session.engine.TableName(beanOrTableName)
 
@@ -160,9 +146,7 @@ func (session *Session) isTableExist(tableName string) (bool, error) {
 
 // IsTableEmpty if table have any records
 func (session *Session) IsTableEmpty(bean interface{}) (bool, error) {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 	return session.isTableEmpty(session.engine.TableName(bean))
 }
 
@@ -226,6 +210,8 @@ func (session *Session) Sync2(beans ...interface{}) error {
 	if session.isAutoClose {
 		session.isAutoClose = false
 		defer session.Close()
+	} else {
+		defer session.AutoCloseOrNot()
 	}
 
 	tables, err := engine.DBMetas()

@@ -84,6 +84,12 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
+func (session *Session) AutoCloseOrNot() {
+	if session.isAutoClose {
+		defer session.Close()
+	}
+}
+
 // Close release the connection from pool
 func (session *Session) Close() {
 	for _, v := range session.stmtCache {

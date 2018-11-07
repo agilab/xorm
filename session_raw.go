@@ -210,9 +210,7 @@ func convertSQLOrArgs(sqlorArgs ...interface{}) (string, []interface{}, error) {
 
 // Exec raw sql
 func (session *Session) Exec(sqlorArgs ...interface{}) (sql.Result, error) {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	if len(sqlorArgs) == 0 {
 		return nil, ErrUnSupportedType

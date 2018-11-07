@@ -143,9 +143,7 @@ func (session *Session) cacheUpdate(table *core.Table, tableName, sqlStr string,
 //         You should call UseBool if you have bool to use.
 //        2.float32 & float64 may be not inexact as conditions
 func (session *Session) Update(bean interface{}, condiBean ...interface{}) (int64, error) {
-	if session.isAutoClose {
-		defer session.Close()
-	}
+	defer session.AutoCloseOrNot()
 
 	v := rValue(bean)
 	t := v.Type()
