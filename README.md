@@ -12,7 +12,7 @@
 
 - `core.Row` 可重载`Scan`方法，在其scan执行最后去记录下当前rows的scan结果。
 
-- 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。这个是通过`isAutoClose`来实现的。
+- 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。
 
 ## 综上所述，找到处理点最少的方式来记录`span`
 
@@ -30,6 +30,9 @@
 - 为了事务内`span`也能正常关闭，搜索所有的 `if session.isAutoClose { xxx `换成必须执行的方法，然后里面执行`span`的关闭，最后再去判断是否去执行`close`操作。
 - 在`session.Close`方法里去结束`span`，发现当前`span`已经结束则忽略。
 
+### if session 修改方法
+vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer session.AutoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
+
 ## 其他乱七八糟的
 
 ### xorm的context缓存机制
@@ -37,6 +40,7 @@
 
 ### xorm的bug
 - 例如`FindAndCount`里的`Close`执行了两次
+- 例如`Iterate`里的`Close`执行了两次
 - 例如`sum`私有方法，却执行了`Close`，这个不太合理
 - 例如`Ping` `PingContext` `Query``Exec`等方法不走`beforeClosures`，`afterClosures`
 - 例如`Ping` `PingContext` 方法没记录`lastSql`
