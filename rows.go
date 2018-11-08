@@ -115,6 +115,10 @@ func (rows *Rows) Scan(bean interface{}) error {
 // Close session if session.IsAutoClose is true, and claimed any opened resources
 func (rows *Rows) Close() (xerr error) {
 	defer func() {
+		if xerr == sql.ErrNoRows {
+			rows.session.autoCloseOrNot(nil)
+			return
+		}
 		rows.session.autoCloseOrNot(xerr)
 	}()
 
