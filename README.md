@@ -10,7 +10,7 @@
 - `session_raw.go`里的`Exec`并不会走`afterClosure`，所以需要特别处理一下。
 - `session_query.go`里的`Query``QueryString`等等很多方法并不会走`afterClosure`，所以需要特别处理一下。
 
-- `core.Row` 可重载`Scan`方法，在其scan执行最后去记录下当前rows的scan结果。
+- ~~`core.Row` 可重载`Scan`方法，在其scan执行最后去记录下当前rows的scan结果。~~
 
 - 若处于事务中，整个事务完毕之后才会去执行`session.Close`，否则不会。
 
@@ -25,9 +25,9 @@
 
 ### 结果集的记录，分为`exec`和`scan`两类
 - `exec`的直接在执行完毕那里去记录下`Result`的`LastInsertId`和`RowsAffected`即可。
-- `scan`的利用重载的方式记录每个结果(可能N个)，最后整合所有结果成数组并记录。
-- `scan`的重载不太好搞，因为响应到的类是`core.Rows`，其非xorm package里的，必须去改动`core`了。
-- `core.Row` 同上。
+- ~~`scan`的利用重载的方式记录每个结果(可能N个)，最后整合所有结果成数组并记录。~~
+- ~~`scan`的重载不太好搞，因为响应到的类是`core.Rows`，其非xorm package里的，必须去改动`core`了。~~
+- ~~`core.Row` 同上。~~
 
 ### `span`结束
 - 为了事务内`span`也能正常关闭，搜索所有的 `if session.isAutoClose { xxx `换成必须执行的方法，然后里面执行`span`的关闭，最后再去判断是否去执行`close`操作。
@@ -45,6 +45,16 @@
 - 例如`sum`私有方法，却执行了`Close`，这个不太合理
 - 例如`Ping` `PingContext` `Query``Exec`等方法不走`beforeClosures`，`afterClosures`
 - 例如`Ping` `PingContext` 方法没记录`lastSql`
+
+### 搜索 .Scan 找到需要记录结果的位置
+- 原本想尝试重载`Scan`来实现的，但是后续发现`Scan`方法内部是不可能拿到获取值所对应的名称的。所以还是只能在xorm库里挨个去处理。
+- *_test.go,*.md,dialect_*,doc.go,engine.go,migrate.go,session_convert.go
+
+### err 处理
+- 所有`autoCloseOrNot`和`Close`的地方都要利用`return error名称`+`defer`机制去捕获`err`
+
+### 最终实现和上述所说还是不大一样的，上面的看看就得了。
+
 # xorm
 
 [中文](https://github.com/go-xorm/xorm/blob/master/README_CN.md)
