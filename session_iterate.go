@@ -75,19 +75,16 @@ func (session *Session) bufferIterate(bean interface{}, fun IterFunc) (xerr erro
 	for {
 		slice := reflect.New(sliceType)
 
-		session.commonPrepareTracingSpan("Find")
-		if err := session.Limit(bufferSize, start).find(slice.Interface(), bean); err != nil {
-			if session.tracingInfo != nil {
-				session.tracingInfo.Result.Data = slice.Interface()
-				session.tracingInfo.Err = err
-			}
-			session.finishTracingSpan()
-			return err
-		}
+		session.commonPrepareTracingSpan("Limit_find")
+		err := session.Limit(bufferSize, start).find(slice.Interface(), bean)
 		if session.tracingInfo != nil {
 			session.tracingInfo.Result.Data = slice.Interface()
+			session.tracingInfo.Err = err
 		}
 		session.finishTracingSpan()
+		if err != nil {
+			return err
+		}
 
 		for i := 0; i < slice.Elem().Len(); i++ {
 			if err := fun(idx, slice.Elem().Index(i).Addr().Interface()); err != nil {

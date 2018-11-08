@@ -24,30 +24,77 @@ func (session *Session) Insert(beans ...interface{}) (xaffected int64, xerr erro
 	var affected int64
 	var err error
 
-	// TODO: 如果beans大于1个，就应该整成父子级
+	// 如果beans大于1个，就应该整成父子级
+	subSpan := false
+	if len(beans) > 1 {
+		subSpan = true
+		defer func() {
+			if session.tracingInfo != nil {
+				session.tracingInfo.Result.RowsAffected = xaffected
+			}
+		}()
+	}
 	for _, bean := range beans {
 		sliceValue := reflect.Indirect(reflect.ValueOf(bean))
 		if sliceValue.Kind() == reflect.Slice {
 			size := sliceValue.Len()
 			if size > 0 {
 				if session.engine.SupportInsertMany() {
+					if subSpan {
+						session.commonPrepareTracingSpan("innerInsertMulti")
+					}
 					cnt, err := session.innerInsertMulti(bean)
+					if subSpan {
+						if session.tracingInfo != nil {
+							session.tracingInfo.Err = err
+						}
+						session.finishTracingSpan()
+					}
 					if err != nil {
 						return affected, err
 					}
 					affected += cnt
 				} else {
+					if subSpan {
+						session.commonPrepareTracingSpan("innerInsertGroup")
+					}
+					endGroup := func(aerr error) {
+						if subSpan {
+							if session.tracingInfo != nil {
+								session.tracingInfo.Err = aerr
+							}
+							session.finishTracingSpan()
+						}
+					}
+
 					for i := 0; i < size; i++ {
+						session.commonPrepareTracingSpan("innerInsert")
 						cnt, err := session.innerInsert(sliceValue.Index(i).Interface())
+						if session.tracingInfo != nil {
+							session.tracingInfo.Err = err
+						}
+						session.finishTracingSpan()
 						if err != nil {
+							endGroup(err)
 							return affected, err
 						}
 						affected += cnt
 					}
+
+					endGroup(nil)
 				}
 			}
 		} else {
+			if subSpan {
+				session.commonPrepareTracingSpan("innerInsert")
+			}
 			cnt, err := session.innerInsert(bean)
+			if subSpan {
+				if session.tracingInfo != nil {
+					session.tracingInfo.Err = err
+				}
+				session.finishTracingSpan()
+			}
 			if err != nil {
 				return affected, err
 			}
