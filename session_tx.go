@@ -21,13 +21,13 @@ func (session *Session) Begin() error {
 		session.saveLastSQL("BEGIN TRANSACTION")
 
 		{
-			ti := &tracingInfo{}
-			ti.startTime = time.Now()
-			ti.operation = SessionOpTransaction
-			ti.lastSQL = session.lastSQL
-			ti.lastSQLArgs = session.lastSQLArgs
-			ti.dbType = string(session.engine.dialect.DBType())
-			ti.isTx = true
+			ti := &TracingInfo{}
+			ti.StartTime = time.Now()
+			ti.DriverMethod = "Begin"
+			ti.LastSQL = session.lastSQL
+			ti.LastSQLArgs = session.lastSQLArgs
+			ti.DBType = string(session.engine.dialect.DBType())
+			ti.IsTx = true
 			session.prepareTracingSpan(ti)
 		}
 	}
@@ -38,9 +38,15 @@ func (session *Session) Begin() error {
 func (session *Session) Rollback() error {
 	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
 		session.saveLastSQL(session.engine.dialect.RollBackStr())
-		defer func() {
-			session.tracingInfo.logEvent("ROLLBACK")
-		}()
+		{
+			if session.tracingInfo != nil {
+				defer func() {
+					if session.tracingInfo.Span != nil {
+						session.engine.openTracingCallbacks.RollbackTx(session.tracingInfo)
+					}
+				}()
+			}
+		}
 
 		session.isCommitedOrRollbacked = true
 		session.isAutoCommit = true
@@ -53,12 +59,16 @@ func (session *Session) Rollback() error {
 func (session *Session) Commit() error {
 	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
 		session.saveLastSQL("COMMIT")
-		defer func() {
+		{
 			if session.tracingInfo != nil {
-				session.tracingInfo.txCommit = true
-				session.tracingInfo.logEvent("COMMIT")
+				defer func() {
+					session.tracingInfo.TxCommit = true
+					if session.tracingInfo.Span != nil {
+						session.engine.openTracingCallbacks.CommitTx(session.tracingInfo)
+					}
+				}()
 			}
-		}()
+		}
 
 		session.isCommitedOrRollbacked = true
 		session.isAutoCommit = true

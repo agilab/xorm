@@ -21,7 +21,15 @@ import (
 
 	"github.com/go-xorm/builder"
 	"github.com/go-xorm/core"
+	opentracing "github.com/opentracing/opentracing-go"
 )
+
+type EngineOpenTracingCallbacks struct {
+	PrepareTracingSpan func(ti *TracingInfo) opentracing.Span
+	FinishTracingSpan  func(ti *TracingInfo)
+	CommitTx           func(ti *TracingInfo)
+	RollbackTx         func(ti *TracingInfo)
+}
 
 // Engine is the major struct of xorm, it means a database manager.
 // Commonly, an application only need one engine
@@ -52,6 +60,8 @@ type Engine struct {
 
 	cachers    map[string]core.Cacher
 	cacherLock sync.RWMutex
+
+	openTracingCallbacks *EngineOpenTracingCallbacks
 }
 
 func (engine *Engine) setCacher(tableName string, cacher core.Cacher) {
@@ -145,6 +155,17 @@ func (engine *Engine) DriverName() string {
 // DataSourceName return the current connection string
 func (engine *Engine) DataSourceName() string {
 	return engine.dialect.DataSourceName()
+}
+
+// SetOpenTracingCallbacks set openTracingCallbacks
+func (engine *Engine) SetOpenTracingCallbacks(callbacks *EngineOpenTracingCallbacks) {
+	if callbacks.PrepareTracingSpan == nil ||
+		callbacks.FinishTracingSpan == nil ||
+		callbacks.RollbackTx == nil ||
+		callbacks.CommitTx == nil {
+		panic("empty EngineOpenTracingCallbacks for SetOpenTracingCallbacks")
+	}
+	engine.openTracingCallbacks = callbacks
 }
 
 // SetMapper set the name mapping rules
