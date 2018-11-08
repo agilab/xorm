@@ -225,7 +225,9 @@ func (session *Session) Sync2(beans ...interface{}) (xerr error) {
 
 	if session.isAutoClose {
 		session.isAutoClose = false
-		defer session.Close()
+		defer func() {
+			session.CloseWithErr(xerr)
+		}()
 	} else {
 		defer func() {
 			session.autoCloseOrNot(xerr)

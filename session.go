@@ -166,7 +166,10 @@ func (session *Session) autoCloseOrNot(xerr error) {
 	if session.isAutoClose {
 		session.CloseWithErr(xerr)
 	} else {
-		session.finishTracingSpan(xerr)
+		// 事务本身的调用必须从CloseWithErr触发
+		if session.tracingInfo != nil && !session.tracingInfo.IsTx {
+			session.finishTracingSpan(xerr)
+		}
 	}
 }
 

@@ -9,9 +9,11 @@ package xorm
 import "context"
 
 // PingContext tests if database is alive
-func (engine *Engine) PingContext(ctx context.Context) error {
+func (engine *Engine) PingContext(ctx context.Context) (xerr error) {
 	session := engine.NewSession()
-	defer session.Close()
+	defer func() {
+		session.CloseWithErr(xerr)
+	}()
 	return session.PingContext(ctx)
 }
 
