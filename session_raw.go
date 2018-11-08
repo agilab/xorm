@@ -150,7 +150,13 @@ func (session *Session) queryBytes(sqlStr string, args ...interface{}) ([]map[st
 	return rows2maps(rows)
 }
 
-func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, error) {
+func (session *Session) exec(sqlStr string, args ...interface{}) (xresult sql.Result, xerr error) {
+	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.LastInsertId, _ = xresult.LastInsertId()
+			session.tracingInfo.Result.RowsAffected, _ = xresult.RowsAffected()
+		}
+	}()
 	defer session.resetStatement()
 
 	session.queryPreprocess(&sqlStr, args...)

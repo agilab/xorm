@@ -22,6 +22,12 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
+type TracingInfoResult struct {
+	RowsAffected int64
+	LastInsertId int64       `json:",omitempty"`
+	Data         interface{} `json:",omitempty"`
+}
+
 type TracingInfo struct {
 	StartTime time.Time // startTime
 	Method    string    // xorm的调用名称
@@ -37,18 +43,10 @@ type TracingInfo struct {
 	IsTx     bool // 当前追踪是否是事务
 	TxCommit bool // 事务是否被提交，最终依此确定span的opname
 
-	Err error // 最终的err
+	Err    error             // 最终的err
+	Result TracingInfoResult // 最终结果
 
 	ParentInfo *TracingInfo // 父级，一般是事务
-}
-
-func (ti *TracingInfo) LogEvent(l string) {
-	if ti == nil {
-		return
-	}
-	if ti.Span != nil {
-		ti.Span.LogEvent(l)
-	}
 }
 
 // Session keep a pointer to sql.DB and provides all execution of all
