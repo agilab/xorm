@@ -18,6 +18,12 @@ import (
 // will be as conditions
 func (session *Session) Get(bean interface{}) (xhas bool, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			if xhas {
+				session.tracingInfo.Result.RowsAffected = 1
+			}
+			session.tracingInfo.Result.Data = bean
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("Get")

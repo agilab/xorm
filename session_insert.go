@@ -24,6 +24,7 @@ func (session *Session) Insert(beans ...interface{}) (xaffected int64, xerr erro
 	var affected int64
 	var err error
 
+	// TODO: 如果beans大于1个，就应该整成父子级
 	for _, bean := range beans {
 		sliceValue := reflect.Indirect(reflect.ValueOf(bean))
 		if sliceValue.Kind() == reflect.Slice {

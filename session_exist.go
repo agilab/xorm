@@ -16,6 +16,12 @@ import (
 // Exist returns true if the record exist otherwise return false
 func (session *Session) Exist(bean ...interface{}) (xexist bool, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			if xexist {
+				session.tracingInfo.Result.RowsAffected = 1
+			}
+			session.tracingInfo.Result.Data = xexist
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("Exist")

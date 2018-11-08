@@ -21,6 +21,8 @@ type Rows struct {
 	fields    []string
 	beanType  reflect.Type
 	lastError error
+
+	scanBeans []interface{}
 }
 
 func newRows(session *Session, bean interface{}) (*Rows, error) {
@@ -85,7 +87,13 @@ func (rows *Rows) Err() error {
 }
 
 // Scan row record to bean properties
-func (rows *Rows) Scan(bean interface{}) error {
+func (rows *Rows) Scan(bean interface{}) (xerr error) {
+	defer func() {
+		if xerr == nil {
+			rows.scanBeans = append(rows.scanBeans, bean)
+		}
+	}()
+
 	if rows.lastError != nil {
 		return rows.lastError
 	}
@@ -115,6 +123,10 @@ func (rows *Rows) Scan(bean interface{}) error {
 // Close session if session.IsAutoClose is true, and claimed any opened resources
 func (rows *Rows) Close() (xerr error) {
 	defer func() {
+		if rows.session.tracingInfo != nil {
+			rows.session.tracingInfo.Result.Data = rows.scanBeans
+		}
+
 		if xerr == sql.ErrNoRows {
 			rows.session.autoCloseOrNot(nil)
 			return

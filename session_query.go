@@ -80,6 +80,9 @@ func (session *Session) genQuerySQL(sqlorArgs ...interface{}) (string, []interfa
 // Query runs a raw sql and return records as []map[string][]byte
 func (session *Session) Query(sqlorArgs ...interface{}) (xresult []map[string][]byte, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = xresult
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("Query")
@@ -230,6 +233,9 @@ func rows2SliceString(rows *core.Rows) (resultsSlice [][]string, err error) {
 // QueryString runs a raw sql and return records as []map[string]string
 func (session *Session) QueryString(sqlorArgs ...interface{}) (xresult []map[string]string, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = xresult
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("QueryString")
@@ -251,6 +257,9 @@ func (session *Session) QueryString(sqlorArgs ...interface{}) (xresult []map[str
 // QuerySliceString runs a raw sql and return records as [][]string
 func (session *Session) QuerySliceString(sqlorArgs ...interface{}) (xresult [][]string, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = xresult
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("QuerySliceString")
@@ -305,6 +314,9 @@ func rows2Interfaces(rows *core.Rows) (resultsSlice []map[string]interface{}, er
 // QueryInterface runs a raw sql and return records as []map[string]interface{}
 func (session *Session) QueryInterface(sqlorArgs ...interface{}) (xresult []map[string]interface{}, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = xresult
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("QueryInterface")

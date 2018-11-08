@@ -78,10 +78,14 @@ func (session *Session) bufferIterate(bean interface{}, fun IterFunc) (xerr erro
 		session.commonPrepareTracingSpan("Find")
 		if err := session.Limit(bufferSize, start).find(slice.Interface(), bean); err != nil {
 			if session.tracingInfo != nil {
+				session.tracingInfo.Result.Data = slice.Interface()
 				session.tracingInfo.Err = err
 			}
 			session.finishTracingSpan()
 			return err
+		}
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = slice.Interface()
 		}
 		session.finishTracingSpan()
 

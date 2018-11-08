@@ -14,6 +14,10 @@ import (
 // are conditions.
 func (session *Session) Count(bean ...interface{}) (xcnt int64, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.RowsAffected = xcnt
+			session.tracingInfo.Result.Data = xcnt
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("Count")
@@ -43,6 +47,9 @@ func (session *Session) Count(bean ...interface{}) (xcnt int64, xerr error) {
 // sum call sum some column. bean's non-empty fields are conditions.
 func (session *Session) sum(res interface{}, bean interface{}, columnNames ...string) (xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = res
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 

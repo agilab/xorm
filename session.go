@@ -203,6 +203,14 @@ func (session *Session) finishTracingSpan() {
 		session.tracingInfo = ti.ParentInfo
 	}()
 
+	if ti.Result.Data != nil {
+		// 如果data是数组，则修正RowsAffected
+		dataV := reflect.Indirect(reflect.ValueOf(ti.Result.Data))
+		if dataV.Kind() == reflect.Slice {
+			ti.Result.RowsAffected = int64(dataV.Len())
+		}
+	}
+
 	if ti.Span != nil {
 		session.engine.openTracingCallbacks.FinishTracingSpan(ti, ti.Err)
 	}

@@ -150,6 +150,12 @@ func (session *Session) dropTable(beanOrTableName interface{}) error {
 // IsTableExist if a table is exist
 func (session *Session) IsTableExist(beanOrTableName interface{}) (xexist bool, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			if xexist {
+				session.tracingInfo.Result.RowsAffected = 1
+			}
+			session.tracingInfo.Result.Data = xexist
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("IsTableExist")
@@ -168,6 +174,9 @@ func (session *Session) isTableExist(tableName string) (bool, error) {
 // IsTableEmpty if table have any records
 func (session *Session) IsTableEmpty(bean interface{}) (xempty bool, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil {
+			session.tracingInfo.Result.Data = xempty
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("IsTableEmpty")

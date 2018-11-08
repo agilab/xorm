@@ -24,6 +24,9 @@ const (
 // map[int64]*Struct
 func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{}) (xerr error) {
 	defer func() {
+		if session.tracingInfo != nil && xerr == nil {
+			session.tracingInfo.Result.Data = rowsSlicePtr
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("Find")
@@ -33,6 +36,9 @@ func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{})
 // FindAndCount find the results and also return the counts
 func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (xcnt int64, xerr error) {
 	defer func() {
+		if session.tracingInfo != nil && xerr == nil {
+			session.tracingInfo.Result.Data = rowsSlicePtr
+		}
 		session.autoCloseOrNot(xerr)
 	}()
 	session.commonPrepareTracingSpan("FindAndCount")
