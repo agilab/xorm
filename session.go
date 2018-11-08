@@ -166,13 +166,16 @@ func (session *Session) autoCloseOrNot() {
 	if session.isAutoClose {
 		session.Close()
 	} else {
-		session.finishTracingSpan()
+		// 事务内的调用到这就可以结束了，但是事务本身调用不可，事务本身的调用必须等到执行`Close`才可认定结束
+		if session.tracingInfo != nil && !session.tracingInfo.IsTx {
+			session.finishTracingSpan()
+		}
 	}
 }
 
 // Close release the connection from pool
 func (session *Session) Close() {
-	session.finishTracingSpan()
+	defer session.finishTracingSpan()
 
 	for _, v := range session.stmtCache {
 		v.Close()
