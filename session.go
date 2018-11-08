@@ -26,11 +26,11 @@ type TracingInfo struct {
 	StartTime time.Time // startTime
 	Method    string    // xorm的调用名称
 	DBType    string
+
 	TableName string // main table name
 
-	DriverMethod string // 最终执行的原生DB Method
-	LastSQL      string
-	LastSQLArgs  []interface{}
+	LastSQL     string
+	LastSQLArgs []interface{}
 
 	Span opentracing.Span
 
@@ -118,7 +118,7 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
-func (session *Session) simplePrepareTracingSpan(method string) {
+func (session *Session) commonPrepareTracingSpan(method string) {
 	session.prepareTracingSpan(func() *TracingInfo {
 		ti := &TracingInfo{}
 		ti.StartTime = time.Now()

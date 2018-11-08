@@ -26,6 +26,7 @@ func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{})
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Find")
 	return session.find(rowsSlicePtr, condiBean...)
 }
 
@@ -34,6 +35,7 @@ func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...inte
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("FindAndCount")
 
 	session.autoResetStatement = false
 	err := session.find(rowsSlicePtr, condiBean...)

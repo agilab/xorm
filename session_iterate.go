@@ -12,6 +12,7 @@ type IterFunc func(idx int, bean interface{}) error
 // Rows return sql.Rows compatible Rows obj, as a forward Iterator object for iterating record by record, bean's non-empty fields
 // are conditions.
 func (session *Session) Rows(bean interface{}) (*Rows, error) {
+	session.commonPrepareTracingSpan("Rows")
 	return newRows(session, bean)
 }
 
@@ -19,6 +20,8 @@ func (session *Session) Rows(bean interface{}) (*Rows, error) {
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
 func (session *Session) Iterate(bean interface{}, fun IterFunc) (xerr error) {
+	session.commonPrepareTracingSpan("Iterate")
+
 	if session.statement.bufferSize > 0 {
 		return session.bufferIterate(bean, fun)
 	}

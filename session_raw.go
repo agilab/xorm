@@ -215,6 +215,7 @@ func (session *Session) Exec(sqlorArgs ...interface{}) (xresult sql.Result, xerr
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Exec")
 
 	if len(sqlorArgs) == 0 {
 		return nil, ErrUnSupportedType

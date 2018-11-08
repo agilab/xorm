@@ -78,6 +78,7 @@ func (session *Session) Delete(bean interface{}) (xaffected int64, xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Delete")
 
 	if err := session.statement.setRefBean(bean); err != nil {
 		return 0, err

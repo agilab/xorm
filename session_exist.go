@@ -18,6 +18,7 @@ func (session *Session) Exist(bean ...interface{}) (xexist bool, xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Exist")
 
 	var sqlStr string
 	var args []interface{}

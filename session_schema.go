@@ -17,6 +17,7 @@ func (session *Session) Ping() (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Ping")
 
 	session.engine.logger.Infof("PING DATABASE %v", session.engine.DriverName())
 	return session.DB().Ping()
@@ -27,6 +28,7 @@ func (session *Session) CreateTable(bean interface{}) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("CreateTable")
 
 	return session.createTable(bean)
 }
@@ -46,6 +48,7 @@ func (session *Session) CreateIndexes(bean interface{}) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("CreateIndexes")
 
 	return session.createIndexes(bean)
 }
@@ -70,6 +73,7 @@ func (session *Session) CreateUniques(bean interface{}) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("CreateUniques")
 	return session.createUniques(bean)
 }
 
@@ -93,6 +97,7 @@ func (session *Session) DropIndexes(bean interface{}) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("DropIndexes")
 
 	return session.dropIndexes(bean)
 }
@@ -117,6 +122,7 @@ func (session *Session) DropTable(beanOrTableName interface{}) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("DropTable")
 
 	return session.dropTable(beanOrTableName)
 }
@@ -146,6 +152,7 @@ func (session *Session) IsTableExist(beanOrTableName interface{}) (xexist bool, 
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("IsTableExist")
 
 	tableName := session.engine.TableName(beanOrTableName)
 
@@ -163,6 +170,7 @@ func (session *Session) IsTableEmpty(bean interface{}) (xempty bool, xerr error)
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("IsTableEmpty")
 	return session.isTableEmpty(session.engine.TableName(bean))
 }
 
@@ -221,6 +229,8 @@ func (session *Session) addUnique(tableName, uqeName string) error {
 
 // Sync2 synchronize structs to database tables
 func (session *Session) Sync2(beans ...interface{}) (xerr error) {
+	session.commonPrepareTracingSpan("Sync2")
+
 	engine := session.engine
 
 	if session.isAutoClose {

@@ -146,6 +146,7 @@ func (session *Session) Update(bean interface{}, condiBean ...interface{}) (xaff
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Update")
 
 	v := rValue(bean)
 	t := v.Type()

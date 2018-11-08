@@ -16,6 +16,7 @@ func (session *Session) Count(bean ...interface{}) (xcnt int64, xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Count")
 
 	var sqlStr string
 	var args []interface{}
@@ -77,22 +78,26 @@ func (session *Session) sum(res interface{}, bean interface{}, columnNames ...st
 
 // Sum call sum some column. bean's non-empty fields are conditions.
 func (session *Session) Sum(bean interface{}, columnName string) (res float64, err error) {
+	session.commonPrepareTracingSpan("Sum")
 	return res, session.sum(&res, bean, columnName)
 }
 
 // SumInt call sum some column. bean's non-empty fields are conditions.
 func (session *Session) SumInt(bean interface{}, columnName string) (res int64, err error) {
+	session.commonPrepareTracingSpan("SumInt")
 	return res, session.sum(&res, bean, columnName)
 }
 
 // Sums call sum some columns. bean's non-empty fields are conditions.
 func (session *Session) Sums(bean interface{}, columnNames ...string) ([]float64, error) {
+	session.commonPrepareTracingSpan("Sums")
 	var res = make([]float64, len(columnNames), len(columnNames))
 	return res, session.sum(&res, bean, columnNames...)
 }
 
 // SumsInt sum specify columns and return as []int64 instead of []float64
 func (session *Session) SumsInt(bean interface{}, columnNames ...string) ([]int64, error) {
+	session.commonPrepareTracingSpan("SumsInt")
 	var res = make([]int64, len(columnNames), len(columnNames))
 	return res, session.sum(&res, bean, columnNames...)
 }

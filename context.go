@@ -22,6 +22,7 @@ func (session *Session) PingContext(ctx context.Context) (xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("PingContext")
 
 	session.engine.logger.Infof("PING DATABASE %v", session.engine.DriverName())
 	return session.DB().PingContext(ctx)

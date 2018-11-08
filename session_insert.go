@@ -19,6 +19,7 @@ func (session *Session) Insert(beans ...interface{}) (xaffected int64, xerr erro
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Insert")
 
 	var affected int64
 	var err error
@@ -271,6 +272,7 @@ func (session *Session) InsertMulti(rowsSlicePtr interface{}) (xcnt int64, xerr 
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("InsertMulti")
 
 	sliceValue := reflect.Indirect(reflect.ValueOf(rowsSlicePtr))
 	if sliceValue.Kind() != reflect.Slice {
@@ -517,6 +519,7 @@ func (session *Session) InsertOne(bean interface{}) (xcnt int64, xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("InsertOne")
 
 	return session.innerInsert(bean)
 }

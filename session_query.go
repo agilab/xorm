@@ -82,6 +82,7 @@ func (session *Session) Query(sqlorArgs ...interface{}) (xresult []map[string][]
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Query")
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -231,6 +232,7 @@ func (session *Session) QueryString(sqlorArgs ...interface{}) (xresult []map[str
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("QueryString")
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -251,6 +253,7 @@ func (session *Session) QuerySliceString(sqlorArgs ...interface{}) (xresult [][]
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("QuerySliceString")
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -304,6 +307,7 @@ func (session *Session) QueryInterface(sqlorArgs ...interface{}) (xresult []map[
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("QueryInterface")
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {

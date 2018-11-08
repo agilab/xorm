@@ -20,6 +20,7 @@ func (session *Session) Get(bean interface{}) (xhas bool, xerr error) {
 	defer func() {
 		session.autoCloseOrNot(xerr)
 	}()
+	session.commonPrepareTracingSpan("Get")
 	return session.get(bean)
 }
 

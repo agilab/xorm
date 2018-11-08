@@ -4,9 +4,21 @@
 
 package xorm
 
+import "time"
+
 // Begin a transaction
 func (session *Session) Begin() error {
 	if session.isAutoCommit {
+		session.prepareTracingSpan(func() *TracingInfo {
+			ti := &TracingInfo{}
+			ti.StartTime = time.Now()
+			ti.DBType = string(session.engine.dialect.DBType())
+			ti.Method = "Transaction"
+			ti.TableName = session.statement.TableName()
+			ti.IsTx = true
+			return ti
+		})
+
 		tx, err := session.DB().Begin()
 		if err != nil {
 			return err
