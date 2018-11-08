@@ -341,9 +341,9 @@ func (engine *Engine) Close() error {
 }
 
 // Ping tests if database is alive
-func (engine *Engine) Ping() (xerr error) {
+func (engine *Engine) Ping() error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Ping()
 }
 
@@ -1074,16 +1074,16 @@ func (engine *Engine) mapType(v reflect.Value) (*core.Table, error) {
 }
 
 // IsTableEmpty if a table has any reocrd
-func (engine *Engine) IsTableEmpty(bean interface{}) (xresult bool, xerr error) {
+func (engine *Engine) IsTableEmpty(bean interface{}) (bool, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.IsTableEmpty(bean)
 }
 
 // IsTableExist if a table is exist
-func (engine *Engine) IsTableExist(beanOrTableName interface{}) (xresult bool, xerr error) {
+func (engine *Engine) IsTableExist(beanOrTableName interface{}) (bool, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.IsTableExist(beanOrTableName)
 }
 
@@ -1177,16 +1177,16 @@ func (engine *Engine) idTypeAssertion(col *core.Column, sid string) (interface{}
 }
 
 // CreateIndexes create indexes
-func (engine *Engine) CreateIndexes(bean interface{}) (xerr error) {
+func (engine *Engine) CreateIndexes(bean interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.CreateIndexes(bean)
 }
 
 // CreateUniques create uniques
-func (engine *Engine) CreateUniques(bean interface{}) (xerr error) {
+func (engine *Engine) CreateUniques(bean interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.CreateUniques(bean)
 }
 
@@ -1217,9 +1217,9 @@ func (engine *Engine) ClearCache(beans ...interface{}) error {
 // Sync the new struct changes to database, this method will automatically add
 // table, column, index, unique. but will not delete or change anything.
 // If you change some field, you should change the database manually.
-func (engine *Engine) Sync(beans ...interface{}) (xerr error) {
+func (engine *Engine) Sync(beans ...interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 
 	for _, bean := range beans {
 		v := rValue(bean)
@@ -1321,9 +1321,9 @@ func (engine *Engine) Sync2(beans ...interface{}) error {
 }
 
 // CreateTables create tabls according bean
-func (engine *Engine) CreateTables(beans ...interface{}) (xerr error) {
+func (engine *Engine) CreateTables(beans ...interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 
 	err := session.Begin()
 	if err != nil {
@@ -1341,9 +1341,9 @@ func (engine *Engine) CreateTables(beans ...interface{}) (xerr error) {
 }
 
 // DropTables drop specify tables
-func (engine *Engine) DropTables(beans ...interface{}) (xerr error) {
+func (engine *Engine) DropTables(beans ...interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 
 	err := session.Begin()
 	if err != nil {
@@ -1361,51 +1361,51 @@ func (engine *Engine) DropTables(beans ...interface{}) (xerr error) {
 }
 
 // DropIndexes drop indexes of a table
-func (engine *Engine) DropIndexes(bean interface{}) (xerr error) {
+func (engine *Engine) DropIndexes(bean interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.DropIndexes(bean)
 }
 
 // Exec raw sql
-func (engine *Engine) Exec(sqlorArgs ...interface{}) (xresult sql.Result, xerr error) {
+func (engine *Engine) Exec(sqlorArgs ...interface{}) (sql.Result, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Exec(sqlorArgs...)
 }
 
 // Query a raw sql and return records as []map[string][]byte
-func (engine *Engine) Query(sqlorArgs ...interface{}) (resultsSlice []map[string][]byte, xerr error) {
+func (engine *Engine) Query(sqlorArgs ...interface{}) (resultsSlice []map[string][]byte, err error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Query(sqlorArgs...)
 }
 
 // QueryString runs a raw sql and return records as []map[string]string
-func (engine *Engine) QueryString(sqlorArgs ...interface{}) (xresult []map[string]string, xerr error) {
+func (engine *Engine) QueryString(sqlorArgs ...interface{}) ([]map[string]string, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.QueryString(sqlorArgs...)
 }
 
 // QueryInterface runs a raw sql and return records as []map[string]interface{}
-func (engine *Engine) QueryInterface(sqlorArgs ...interface{}) (xresult []map[string]interface{}, xerr error) {
+func (engine *Engine) QueryInterface(sqlorArgs ...interface{}) ([]map[string]interface{}, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.QueryInterface(sqlorArgs...)
 }
 
 // Insert one or more records
-func (engine *Engine) Insert(beans ...interface{}) (xresult int64, xerr error) {
+func (engine *Engine) Insert(beans ...interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Insert(beans...)
 }
 
 // InsertOne insert only one record
-func (engine *Engine) InsertOne(bean interface{}) (xresult int64, xerr error) {
+func (engine *Engine) InsertOne(bean interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.InsertOne(bean)
 }
 
@@ -1415,55 +1415,55 @@ func (engine *Engine) InsertOne(bean interface{}) (xresult int64, xerr error) {
 //        1.bool will defaultly be updated content nor conditions
 //         You should call UseBool if you have bool to use.
 //        2.float32 & float64 may be not inexact as conditions
-func (engine *Engine) Update(bean interface{}, condiBeans ...interface{}) (xresult int64, xerr error) {
+func (engine *Engine) Update(bean interface{}, condiBeans ...interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Update(bean, condiBeans...)
 }
 
 // Delete records, bean's non-empty fields are conditions
-func (engine *Engine) Delete(bean interface{}) (xresult int64, xerr error) {
+func (engine *Engine) Delete(bean interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Delete(bean)
 }
 
 // Get retrieve one record from table, bean's non-empty fields
 // are conditions
-func (engine *Engine) Get(bean interface{}) (xresult bool, xerr error) {
+func (engine *Engine) Get(bean interface{}) (bool, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Get(bean)
 }
 
 // Exist returns true if the record exist otherwise return false
-func (engine *Engine) Exist(bean ...interface{}) (xresult bool, xerr error) {
+func (engine *Engine) Exist(bean ...interface{}) (bool, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Exist(bean...)
 }
 
 // Find retrieve records from table, condiBeans's non-empty fields
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
-func (engine *Engine) Find(beans interface{}, condiBeans ...interface{}) (xerr error) {
+func (engine *Engine) Find(beans interface{}, condiBeans ...interface{}) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Find(beans, condiBeans...)
 }
 
 // FindAndCount find the results and also return the counts
-func (engine *Engine) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (xresult int64, xerr error) {
+func (engine *Engine) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.FindAndCount(rowsSlicePtr, condiBean...)
 }
 
 // Iterate record by record handle records from table, bean's non-empty fields
 // are conditions.
-func (engine *Engine) Iterate(bean interface{}, fun IterFunc) (xerr error) {
+func (engine *Engine) Iterate(bean interface{}, fun IterFunc) error {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Iterate(bean, fun)
 }
 
@@ -1475,37 +1475,37 @@ func (engine *Engine) Rows(bean interface{}) (*Rows, error) {
 }
 
 // Count counts the records. bean's non-empty fields are conditions.
-func (engine *Engine) Count(bean ...interface{}) (xresult int64, xerr error) {
+func (engine *Engine) Count(bean ...interface{}) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Count(bean...)
 }
 
 // Sum sum the records by some column. bean's non-empty fields are conditions.
-func (engine *Engine) Sum(bean interface{}, colName string) (xresult float64, xerr error) {
+func (engine *Engine) Sum(bean interface{}, colName string) (float64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Sum(bean, colName)
 }
 
 // SumInt sum the records by some column. bean's non-empty fields are conditions.
-func (engine *Engine) SumInt(bean interface{}, colName string) (xresult int64, xerr error) {
+func (engine *Engine) SumInt(bean interface{}, colName string) (int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.SumInt(bean, colName)
 }
 
 // Sums sum the records by some columns. bean's non-empty fields are conditions.
-func (engine *Engine) Sums(bean interface{}, colNames ...string) (xresult []float64, xerr error) {
+func (engine *Engine) Sums(bean interface{}, colNames ...string) ([]float64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.Sums(bean, colNames...)
 }
 
 // SumsInt like Sums but return slice of int64 instead of float64.
-func (engine *Engine) SumsInt(bean interface{}, colNames ...string) (xresult []int64, xerr error) {
+func (engine *Engine) SumsInt(bean interface{}, colNames ...string) ([]int64, error) {
 	session := engine.NewSession()
-	defer func() { session.CloseWithErr(xerr) }()
+	defer session.Close()
 	return session.SumsInt(bean, colNames...)
 }
 

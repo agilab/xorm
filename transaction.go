@@ -5,11 +5,9 @@
 package xorm
 
 // Transaction Execute sql wrapped in a transaction(abbr as tx), tx will automatic commit if no errors occurred
-func (engine *Engine) Transaction(f func(*Session) (interface{}, error)) (xa interface{}, xerr error) {
+func (engine *Engine) Transaction(f func(*Session) (interface{}, error)) (interface{}, error) {
 	session := engine.NewSession()
-	defer func() {
-		session.CloseWithErr(xerr)
-	}()
+	defer session.Close()
 
 	if err := session.Begin(); err != nil {
 		return nil, err
