@@ -37,6 +37,8 @@ type TracingInfo struct {
 	IsTx     bool // 当前追踪是否是事务
 	TxCommit bool // 事务是否被提交，最终依此确定span的opname
 
+	Err error // 最终的err
+
 	ParentInfo *TracingInfo // 父级，一般是事务
 }
 
@@ -176,10 +178,13 @@ func (session *Session) afterGenSQLForTracing() {
 	session.tracingInfo.LastSQL = session.lastSQL
 	session.tracingInfo.LastSQLArgs = session.lastSQLArgs
 	session.tracingInfo.TableName = session.statement.TableName()
-	session.engine.openTracingCallbacks.AfterGenSQL(ti)
+
+	if ti.Span != nil {
+		session.engine.openTracingCallbacks.AfterGenSQL(ti)
+	}
 }
 
-func (session *Session) finishTracingSpan(xerr error) {
+func (session *Session) finishTracingSpan() {
 	// 没启用openTracing
 	if session.engine.openTracingCallbacks == nil {
 		return
@@ -193,25 +198,34 @@ func (session *Session) finishTracingSpan(xerr error) {
 
 	// 还原操作
 	defer func() {
+		// err 往上传递
+		if ti.Err != nil && ti.ParentInfo != nil {
+			ti.ParentInfo.Err = ti.Err
+		}
 		session.tracingInfo = ti.ParentInfo
 	}()
 
 	if ti.Span != nil {
-		session.engine.openTracingCallbacks.FinishTracingSpan(ti, xerr)
+		session.engine.openTracingCallbacks.FinishTracingSpan(ti, ti.Err)
 	}
 }
 
 func (session *Session) autoCloseOrNot(xerr error) {
+	if session.tracingInfo != nil {
+		// 记录以作后续使用
+		session.tracingInfo.Err = xerr
+	}
+
 	if session.isAutoClose {
-		session.CloseWithErr(xerr)
+		session.Close()
 	} else {
-		session.finishTracingSpan(xerr)
+		session.finishTracingSpan()
 	}
 }
 
-// Close release the connection from pool and transfer xerr
-func (session *Session) CloseWithErr(xerr error) {
-	defer session.finishTracingSpan(xerr)
+// Close release the connection from pool
+func (session *Session) Close() {
+	defer session.finishTracingSpan()
 
 	for _, v := range session.stmtCache {
 		v.Close()
@@ -227,11 +241,6 @@ func (session *Session) CloseWithErr(xerr error) {
 		session.stmtCache = nil
 		session.db = nil
 	}
-}
-
-// Close release the connection from pool
-func (session *Session) Close() {
-	session.CloseWithErr(nil)
 }
 
 // ContextCache enable context cache or not
