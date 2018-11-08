@@ -19,8 +19,7 @@ func (session *Session) Begin() error {
 		session.isCommitedOrRollbacked = false
 		session.tx = tx
 		session.saveLastSQL("BEGIN TRANSACTION")
-
-		{
+		session.prepareTracingSpan(func() *TracingInfo {
 			ti := &TracingInfo{}
 			ti.StartTime = time.Now()
 			ti.DriverMethod = "Begin"
@@ -28,8 +27,8 @@ func (session *Session) Begin() error {
 			ti.LastSQLArgs = session.lastSQLArgs
 			ti.DBType = string(session.engine.dialect.DBType())
 			ti.IsTx = true
-			session.prepareTracingSpan(ti)
-		}
+			return ti
+		})
 	}
 	return nil
 }

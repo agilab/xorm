@@ -116,13 +116,19 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
-func (session *Session) prepareTracingSpan(ti *TracingInfo) {
+func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
+	// 没启用openTracing
+	if session.engine.openTracingCallbacks == nil {
+		return
+	}
+
+	ti := getTiBlock()
 	if ti == nil {
 		stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("no TracingInfo, cant prepareTracing.")))
 		return
 	}
 
-	// 原追踪信息丢为父级
+	// 原追踪信息丢为父级，且记录当前级
 	ti.ParentInfo = session.tracingInfo
 	session.tracingInfo = ti
 
@@ -135,6 +141,11 @@ func (session *Session) prepareTracingSpan(ti *TracingInfo) {
 }
 
 func (session *Session) finishTracingSpan() {
+	// 没启用openTracing
+	if session.engine.openTracingCallbacks == nil {
+		return
+	}
+
 	ti := session.tracingInfo
 	if ti == nil {
 		// stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("no TracingInfo, cant finishTracingSpan.")))
