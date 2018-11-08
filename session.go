@@ -23,12 +23,14 @@ import (
 )
 
 type TracingInfo struct {
-	StartTime    time.Time // startTime
-	DriverMethod string    // 最终执行的原生DB Method
+	StartTime time.Time // startTime
+	Method    string    // xorm的调用名称
+	DBType    string
+	TableName string // main table name
+
+	DriverMethod string // 最终执行的原生DB Method
 	LastSQL      string
 	LastSQLArgs  []interface{}
-	DBType       string
-	TableName    string // main table name
 
 	Span opentracing.Span
 
@@ -116,6 +118,17 @@ func (session *Session) Init() {
 	session.lastSQLArgs = []interface{}{}
 }
 
+func (session *Session) simplePrepareTracingSpan(method string) {
+	session.prepareTracingSpan(func() *TracingInfo {
+		ti := &TracingInfo{}
+		ti.StartTime = time.Now()
+		ti.DBType = string(session.engine.dialect.DBType())
+		ti.Method = method
+		ti.TableName = session.statement.TableName()
+		return ti
+	})
+}
+
 func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
 	// 没启用openTracing
 	if session.engine.openTracingCallbacks == nil {
@@ -128,6 +141,10 @@ func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
 		return
 	}
 
+	if ti.Method == "" {
+		panic("the TracingInfo must gives Method")
+	}
+
 	// 原追踪信息丢为父级，且记录当前级
 	ti.ParentInfo = session.tracingInfo
 	session.tracingInfo = ti
@@ -138,6 +155,21 @@ func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
 		stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("prepareTracingSpan failed")))
 		return
 	}
+}
+
+func (session *Session) afterGenSQL() {
+	// 没启用openTracing
+	if session.engine.openTracingCallbacks == nil {
+		return
+	}
+
+	ti := session.tracingInfo
+	if ti == nil {
+		stdlog.Printf("%+v\n", ers.WithStack(fmt.Errorf("no TracingInfo, cant afterGenSQL.")))
+		return
+	}
+
+	session.engine.openTracingCallbacks.AfterGenSQL(ti)
 }
 
 func (session *Session) finishTracingSpan(xerr error) {
@@ -166,10 +198,7 @@ func (session *Session) autoCloseOrNot(xerr error) {
 	if session.isAutoClose {
 		session.CloseWithErr(xerr)
 	} else {
-		// 事务本身的调用必须从CloseWithErr触发
-		if session.tracingInfo != nil && !session.tracingInfo.IsTx {
-			session.finishTracingSpan(xerr)
-		}
+		session.finishTracingSpan(xerr)
 	}
 }
 

@@ -27,7 +27,9 @@ func (session *Session) queryRows(sqlStr string, args ...interface{}) (*core.Row
 
 	session.queryPreprocess(&sqlStr, args...)
 	session.prepareTracingSpan(func() *TracingInfo {
-		ti := &TracingInfo{}
+		ti := &TracingInfo{
+			Method: "Query",
+		}
 		ti.StartTime = time.Now()
 		ti.DriverMethod = "Query"
 		ti.LastSQL = session.lastSQL
@@ -36,6 +38,7 @@ func (session *Session) queryRows(sqlStr string, args ...interface{}) (*core.Row
 		ti.TableName = session.statement.TableName()
 		return ti
 	})
+	session.afterGenSQL()
 
 	if session.engine.showSQL {
 		if session.engine.showExecTime {
@@ -164,7 +167,9 @@ func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, er
 
 	session.queryPreprocess(&sqlStr, args...)
 	session.prepareTracingSpan(func() *TracingInfo {
-		ti := &TracingInfo{}
+		ti := &TracingInfo{
+			Method: "Exec",
+		}
 		ti.StartTime = time.Now()
 		ti.DriverMethod = "Exec"
 		ti.LastSQL = session.lastSQL
@@ -173,6 +178,7 @@ func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, er
 		ti.TableName = session.statement.TableName()
 		return ti
 	})
+	session.afterGenSQL()
 
 	if session.engine.showSQL {
 		if session.engine.showExecTime {

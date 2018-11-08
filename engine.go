@@ -26,9 +26,10 @@ import (
 
 type EngineOpenTracingCallbacks struct {
 	PrepareTracingSpan func(ti *TracingInfo) opentracing.Span
-	FinishTracingSpan  func(ti *TracingInfo, xerr error)
+	AfterGenSQL        func(ti *TracingInfo)
 	CommitTx           func(ti *TracingInfo)
 	RollbackTx         func(ti *TracingInfo)
+	FinishTracingSpan  func(ti *TracingInfo, xerr error)
 }
 
 // Engine is the major struct of xorm, it means a database manager.

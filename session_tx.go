@@ -20,7 +20,9 @@ func (session *Session) Begin() error {
 		session.tx = tx
 		session.saveLastSQL("BEGIN TRANSACTION")
 		session.prepareTracingSpan(func() *TracingInfo {
-			ti := &TracingInfo{}
+			ti := &TracingInfo{
+				Method: "Begin",
+			}
 			ti.StartTime = time.Now()
 			ti.DriverMethod = "Begin"
 			ti.LastSQL = session.lastSQL
@@ -29,6 +31,7 @@ func (session *Session) Begin() error {
 			ti.IsTx = true
 			return ti
 		})
+		session.afterGenSQL()
 	}
 	return nil
 }
