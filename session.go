@@ -158,6 +158,10 @@ func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
 }
 
 func (session *Session) afterGenSQL() {
+	session.afterGenSQLForTracing()
+}
+
+func (session *Session) afterGenSQLForTracing() {
 	// 没启用openTracing
 	if session.engine.openTracingCallbacks == nil {
 		return
@@ -169,6 +173,9 @@ func (session *Session) afterGenSQL() {
 		return
 	}
 
+	session.tracingInfo.LastSQL = session.lastSQL
+	session.tracingInfo.LastSQLArgs = session.lastSQLArgs
+	session.tracingInfo.TableName = session.statement.TableName()
 	session.engine.openTracingCallbacks.AfterGenSQL(ti)
 }
 

@@ -4,10 +4,6 @@
 
 package xorm
 
-import (
-	"time"
-)
-
 // Begin a transaction
 func (session *Session) Begin() error {
 	if session.isAutoCommit {
@@ -19,18 +15,6 @@ func (session *Session) Begin() error {
 		session.isCommitedOrRollbacked = false
 		session.tx = tx
 		session.saveLastSQL("BEGIN TRANSACTION")
-		session.prepareTracingSpan(func() *TracingInfo {
-			ti := &TracingInfo{
-				Method: "Begin",
-			}
-			ti.StartTime = time.Now()
-			ti.DriverMethod = "Begin"
-			ti.LastSQL = session.lastSQL
-			ti.LastSQLArgs = session.lastSQLArgs
-			ti.DBType = string(session.engine.dialect.DBType())
-			ti.IsTx = true
-			return ti
-		})
 		session.afterGenSQL()
 	}
 	return nil
