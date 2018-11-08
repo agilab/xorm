@@ -13,16 +13,20 @@ import (
 )
 
 // Ping test if database is ok
-func (session *Session) Ping() error {
-	defer session.autoCloseOrNot()
+func (session *Session) Ping() (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	session.engine.logger.Infof("PING DATABASE %v", session.engine.DriverName())
 	return session.DB().Ping()
 }
 
 // CreateTable create a table according a bean
-func (session *Session) CreateTable(bean interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) CreateTable(bean interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	return session.createTable(bean)
 }
@@ -38,8 +42,10 @@ func (session *Session) createTable(bean interface{}) error {
 }
 
 // CreateIndexes create indexes
-func (session *Session) CreateIndexes(bean interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) CreateIndexes(bean interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	return session.createIndexes(bean)
 }
@@ -60,8 +66,10 @@ func (session *Session) createIndexes(bean interface{}) error {
 }
 
 // CreateUniques create uniques
-func (session *Session) CreateUniques(bean interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) CreateUniques(bean interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 	return session.createUniques(bean)
 }
 
@@ -81,8 +89,10 @@ func (session *Session) createUniques(bean interface{}) error {
 }
 
 // DropIndexes drop indexes
-func (session *Session) DropIndexes(bean interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) DropIndexes(bean interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	return session.dropIndexes(bean)
 }
@@ -103,8 +113,10 @@ func (session *Session) dropIndexes(bean interface{}) error {
 }
 
 // DropTable drop table will drop table if exist, if drop failed, it will return error
-func (session *Session) DropTable(beanOrTableName interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) DropTable(beanOrTableName interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	return session.dropTable(beanOrTableName)
 }
@@ -130,8 +142,10 @@ func (session *Session) dropTable(beanOrTableName interface{}) error {
 }
 
 // IsTableExist if a table is exist
-func (session *Session) IsTableExist(beanOrTableName interface{}) (bool, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) IsTableExist(beanOrTableName interface{}) (xexist bool, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	tableName := session.engine.TableName(beanOrTableName)
 
@@ -145,8 +159,10 @@ func (session *Session) isTableExist(tableName string) (bool, error) {
 }
 
 // IsTableEmpty if table have any records
-func (session *Session) IsTableEmpty(bean interface{}) (bool, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) IsTableEmpty(bean interface{}) (xempty bool, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 	return session.isTableEmpty(session.engine.TableName(bean))
 }
 
@@ -204,14 +220,16 @@ func (session *Session) addUnique(tableName, uqeName string) error {
 }
 
 // Sync2 synchronize structs to database tables
-func (session *Session) Sync2(beans ...interface{}) error {
+func (session *Session) Sync2(beans ...interface{}) (xerr error) {
 	engine := session.engine
 
 	if session.isAutoClose {
 		session.isAutoClose = false
 		defer session.Close()
 	} else {
-		defer session.autoCloseOrNot()
+		defer func() {
+			session.autoCloseOrNot(xerr)
+		}()
 	}
 
 	tables, err := engine.DBMetas()

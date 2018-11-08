@@ -142,8 +142,10 @@ func (session *Session) cacheUpdate(table *core.Table, tableName, sqlStr string,
 //        1.bool will defaultly be updated content nor conditions
 //         You should call UseBool if you have bool to use.
 //        2.float32 & float64 may be not inexact as conditions
-func (session *Session) Update(bean interface{}, condiBean ...interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Update(bean interface{}, condiBean ...interface{}) (xaffected int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	v := rValue(bean)
 	t := v.Type()

@@ -113,8 +113,10 @@ func (rows *Rows) Scan(bean interface{}) error {
 }
 
 // Close session if session.IsAutoClose is true, and claimed any opened resources
-func (rows *Rows) Close() error {
-	defer rows.session.autoCloseOrNot()
+func (rows *Rows) Close() (xerr error) {
+	defer func() {
+		rows.session.autoCloseOrNot(xerr)
+	}()
 
 	if rows.lastError == nil {
 		if rows.rows != nil {

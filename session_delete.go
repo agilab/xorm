@@ -74,8 +74,10 @@ func (session *Session) cacheDelete(table *core.Table, tableName, sqlStr string,
 }
 
 // Delete records, bean's non-empty fields are conditions
-func (session *Session) Delete(bean interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Delete(bean interface{}) (xaffected int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	if err := session.statement.setRefBean(bean); err != nil {
 		return 0, err

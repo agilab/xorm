@@ -18,12 +18,14 @@ func (session *Session) Rows(bean interface{}) (*Rows, error) {
 // Iterate record by record handle records from table, condiBeans's non-empty fields
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
-func (session *Session) Iterate(bean interface{}, fun IterFunc) error {
+func (session *Session) Iterate(bean interface{}, fun IterFunc) (xerr error) {
 	if session.statement.bufferSize > 0 {
 		return session.bufferIterate(bean, fun)
 	}
 
-	defer session.autoCloseOrNot()
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	rows, err := session.Rows(bean)
 	if err != nil {
@@ -53,8 +55,10 @@ func (session *Session) BufferSize(size int) *Session {
 	return session
 }
 
-func (session *Session) bufferIterate(bean interface{}, fun IterFunc) error {
-	defer session.autoCloseOrNot()
+func (session *Session) bufferIterate(bean interface{}, fun IterFunc) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	var bufferSize = session.statement.bufferSize
 	var limit = session.statement.LimitN

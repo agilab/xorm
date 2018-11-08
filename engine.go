@@ -26,7 +26,7 @@ import (
 
 type EngineOpenTracingCallbacks struct {
 	PrepareTracingSpan func(ti *TracingInfo) opentracing.Span
-	FinishTracingSpan  func(ti *TracingInfo)
+	FinishTracingSpan  func(ti *TracingInfo, xerr error)
 	CommitTx           func(ti *TracingInfo)
 	RollbackTx         func(ti *TracingInfo)
 }

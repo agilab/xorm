@@ -15,11 +15,13 @@ import (
 )
 
 // Insert insert one or more beans
-func (session *Session) Insert(beans ...interface{}) (int64, error) {
+func (session *Session) Insert(beans ...interface{}) (xaffected int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
+
 	var affected int64
 	var err error
-
-	defer session.autoCloseOrNot()
 
 	for _, bean := range beans {
 		sliceValue := reflect.Indirect(reflect.ValueOf(bean))
@@ -265,8 +267,10 @@ func (session *Session) innerInsertMulti(rowsSlicePtr interface{}) (int64, error
 }
 
 // InsertMulti insert multiple records
-func (session *Session) InsertMulti(rowsSlicePtr interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) InsertMulti(rowsSlicePtr interface{}) (xcnt int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	sliceValue := reflect.Indirect(reflect.ValueOf(rowsSlicePtr))
 	if sliceValue.Kind() != reflect.Slice {
@@ -509,8 +513,10 @@ func (session *Session) innerInsert(bean interface{}) (int64, error) {
 // InsertOne insert only one struct into database as a record.
 // The in parameter bean must a struct or a point to struct. The return
 // parameter is inserted and error
-func (session *Session) InsertOne(bean interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) InsertOne(bean interface{}) (xcnt int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	return session.innerInsert(bean)
 }

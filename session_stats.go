@@ -12,8 +12,10 @@ import (
 
 // Count counts the records. bean's non-empty fields
 // are conditions.
-func (session *Session) Count(bean ...interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Count(bean ...interface{}) (xcnt int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	var sqlStr string
 	var args []interface{}
@@ -38,8 +40,10 @@ func (session *Session) Count(bean ...interface{}) (int64, error) {
 }
 
 // sum call sum some column. bean's non-empty fields are conditions.
-func (session *Session) sum(res interface{}, bean interface{}, columnNames ...string) error {
-	defer session.autoCloseOrNot()
+func (session *Session) sum(res interface{}, bean interface{}, columnNames ...string) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	v := reflect.ValueOf(res)
 	if v.Kind() != reflect.Ptr {

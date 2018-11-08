@@ -229,8 +229,10 @@ func convertSQLOrArgs(sqlorArgs ...interface{}) (string, []interface{}, error) {
 }
 
 // Exec raw sql
-func (session *Session) Exec(sqlorArgs ...interface{}) (sql.Result, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Exec(sqlorArgs ...interface{}) (xresult sql.Result, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	if len(sqlorArgs) == 0 {
 		return nil, ErrUnSupportedType

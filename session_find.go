@@ -22,14 +22,18 @@ const (
 // Find retrieve records from table, condiBeans's non-empty fields
 // are conditions. beans could be []Struct, []*Struct, map[int64]Struct
 // map[int64]*Struct
-func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{}) error {
-	defer session.autoCloseOrNot()
+func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{}) (xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 	return session.find(rowsSlicePtr, condiBean...)
 }
 
 // FindAndCount find the results and also return the counts
-func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (xcnt int64, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	session.autoResetStatement = false
 	err := session.find(rowsSlicePtr, condiBean...)

@@ -31,7 +31,7 @@
 
 ### `span`结束
 - 为了事务内`span`也能正常关闭，搜索所有的 `if session.isAutoClose { xxx `换成必须执行的方法，然后里面执行`span`的关闭，最后再去判断是否去执行`close`操作。
-- vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer autoCloseOrNot()`，这个正则的搜索不支持多文件，vscode的bug
+- vscode搜索`if session.isAutoClose {`然后在每个单文件里正则搜索`if session.isAutoClose {\n\s*defer session.Close\(\)\n\s*}`替换成`defer autoCloseOrNot(xerr)`，这个正则的搜索不支持多文件，vscode的bug
 - 在`autoCloseOrNot`以及`session.Close`方法里去根据上述记录信息确定最终`span`，发现当前session已经记录span则什么都不做。
 
 

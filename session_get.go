@@ -16,8 +16,10 @@ import (
 
 // Get retrieve one record from database, bean's non-empty fields
 // will be as conditions
-func (session *Session) Get(bean interface{}) (bool, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Get(bean interface{}) (xhas bool, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 	return session.get(bean)
 }
 

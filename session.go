@@ -140,7 +140,7 @@ func (session *Session) prepareTracingSpan(getTiBlock func() *TracingInfo) {
 	}
 }
 
-func (session *Session) finishTracingSpan() {
+func (session *Session) finishTracingSpan(xerr error) {
 	// 没启用openTracing
 	if session.engine.openTracingCallbacks == nil {
 		return
@@ -158,24 +158,21 @@ func (session *Session) finishTracingSpan() {
 	}()
 
 	if ti.Span != nil {
-		session.engine.openTracingCallbacks.FinishTracingSpan(ti)
+		session.engine.openTracingCallbacks.FinishTracingSpan(ti, xerr)
 	}
 }
 
-func (session *Session) autoCloseOrNot() {
+func (session *Session) autoCloseOrNot(xerr error) {
 	if session.isAutoClose {
-		session.Close()
+		session.CloseWithErr(xerr)
 	} else {
-		// 事务内的调用到这就可以结束了，但是事务本身调用不可，事务本身的调用必须等到执行`Close`才可认定结束
-		if session.tracingInfo != nil && !session.tracingInfo.IsTx {
-			session.finishTracingSpan()
-		}
+		session.finishTracingSpan(xerr)
 	}
 }
 
-// Close release the connection from pool
-func (session *Session) Close() {
-	defer session.finishTracingSpan()
+// Close release the connection from pool and transfer xerr
+func (session *Session) CloseWithErr(xerr error) {
+	defer session.finishTracingSpan(xerr)
 
 	for _, v := range session.stmtCache {
 		v.Close()
@@ -191,6 +188,11 @@ func (session *Session) Close() {
 		session.stmtCache = nil
 		session.db = nil
 	}
+}
+
+// Close release the connection from pool
+func (session *Session) Close() {
+	session.CloseWithErr(nil)
 }
 
 // ContextCache enable context cache or not

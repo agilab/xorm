@@ -78,8 +78,10 @@ func (session *Session) genQuerySQL(sqlorArgs ...interface{}) (string, []interfa
 }
 
 // Query runs a raw sql and return records as []map[string][]byte
-func (session *Session) Query(sqlorArgs ...interface{}) ([]map[string][]byte, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) Query(sqlorArgs ...interface{}) (xresult []map[string][]byte, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -225,8 +227,10 @@ func rows2SliceString(rows *core.Rows) (resultsSlice [][]string, err error) {
 }
 
 // QueryString runs a raw sql and return records as []map[string]string
-func (session *Session) QueryString(sqlorArgs ...interface{}) ([]map[string]string, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) QueryString(sqlorArgs ...interface{}) (xresult []map[string]string, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -243,8 +247,10 @@ func (session *Session) QueryString(sqlorArgs ...interface{}) ([]map[string]stri
 }
 
 // QuerySliceString runs a raw sql and return records as [][]string
-func (session *Session) QuerySliceString(sqlorArgs ...interface{}) ([][]string, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) QuerySliceString(sqlorArgs ...interface{}) (xresult [][]string, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
@@ -294,8 +300,10 @@ func rows2Interfaces(rows *core.Rows) (resultsSlice []map[string]interface{}, er
 }
 
 // QueryInterface runs a raw sql and return records as []map[string]interface{}
-func (session *Session) QueryInterface(sqlorArgs ...interface{}) ([]map[string]interface{}, error) {
-	defer session.autoCloseOrNot()
+func (session *Session) QueryInterface(sqlorArgs ...interface{}) (xresult []map[string]interface{}, xerr error) {
+	defer func() {
+		session.autoCloseOrNot(xerr)
+	}()
 
 	sqlStr, args, err := session.genQuerySQL(sqlorArgs...)
 	if err != nil {
