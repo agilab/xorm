@@ -1,3 +1,7 @@
+# 支持OpenTracing
+使用`engine.SetOpenTracingCallbacks`即可支持。
+走缓存的`sql`不会被记录下来，以后再处理吧，搜索`res := context.Get(`和`.getCacher(`即可找到相关位置。
+
 # xorm
 
 [中文](https://github.com/go-xorm/xorm/blob/master/README_CN.md)
