@@ -177,7 +177,7 @@ func (session *Session) afterGenSQLForTracing() {
 	session.tracingInfo.LastSQLArgs = session.lastSQLArgs
 	session.tracingInfo.TableName = session.statement.TableName()
 
-	if ti.Span != nil {
+	if ti.Span != nil && session.engine.openTracingCallbacks.AfterGenSQL != nil {
 		session.engine.openTracingCallbacks.AfterGenSQL(ti)
 	}
 }

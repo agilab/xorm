@@ -161,9 +161,9 @@ func (engine *Engine) DataSourceName() string {
 // SetOpenTracingCallbacks set openTracingCallbacks
 func (engine *Engine) SetOpenTracingCallbacks(callbacks *EngineOpenTracingCallbacks) {
 	if callbacks.PrepareTracingSpan == nil ||
-		callbacks.FinishTracingSpan == nil ||
+		callbacks.CommitTx == nil ||
 		callbacks.RollbackTx == nil ||
-		callbacks.CommitTx == nil {
+		callbacks.FinishTracingSpan == nil {
 		panic("empty EngineOpenTracingCallbacks for SetOpenTracingCallbacks")
 	}
 	engine.openTracingCallbacks = callbacks
