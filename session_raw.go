@@ -152,7 +152,7 @@ func (session *Session) queryBytes(sqlStr string, args ...interface{}) ([]map[st
 
 func (session *Session) exec(sqlStr string, args ...interface{}) (xresult sql.Result, xerr error) {
 	defer func() {
-		if session.tracingInfo != nil {
+		if session.tracingInfo != nil && xresult != nil {
 			session.tracingInfo.Result.LastInsertId, _ = xresult.LastInsertId()
 			session.tracingInfo.Result.RowsAffected, _ = xresult.RowsAffected()
 		}
